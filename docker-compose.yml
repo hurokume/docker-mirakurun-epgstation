@@ -1,5 +1,9 @@
 services:
     mirakurun:
+        container_name: mirakurun
+        build:
+            context: ./Mirakurun
+            dockerfile: docker/Dockerfile
         image: chinachu/mirakurun
         cap_add:
             - SYS_ADMIN
@@ -8,13 +12,16 @@ services:
             - "40772:40772"
             - "9229:9229"
         volumes:
-            - ./mirakurun/conf:/app-config
+            - ./mirakurun/config:/app-config
             - ./mirakurun/data:/app-data
         environment:
             TZ: "Asia/Tokyo"
         devices:
+            - /dev/px4video0:/dev/px4video0
+            - /dev/px4video1:/dev/px4video1
+            - /dev/px4video2:/dev/px4video2
+            - /dev/px4video3:/dev/px4video3
             - /dev/bus:/dev/bus
-            - /dev/dvb:/dev/dvb
         restart: always
         logging:
             driver: json-file
@@ -23,6 +30,7 @@ services:
                 max-size: 10m
 
     mysql:
+        container_name: mysql
         image: mariadb:10.5
         # image: mysql:8.0 # 囲み文字を使用する場合
         volumes:
@@ -42,6 +50,7 @@ services:
                 max-file: "3"
 
     epgstation:
+        container_name: epgstation
         build:
             context: "./epgstation"
             dockerfile: "debian.Dockerfile"
@@ -50,7 +59,7 @@ services:
             - ./epgstation/data:/app/data
             - ./epgstation/thumbnail:/app/thumbnail
             - ./epgstation/logs:/app/logs
-            - ./recorded:/app/recorded
+            - /home/samba/TV:/app/recorded
         environment:
             TZ: "Asia/Tokyo"
         depends_on:
