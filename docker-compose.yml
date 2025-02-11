@@ -53,7 +53,7 @@ services:
         container_name: epgstation
         build:
             context: "./epgstation"
-            dockerfile: "debian.Dockerfile"
+            dockerfile: "Dockerfile"
         volumes:
             - ./epgstation/config:/app/config
             - ./epgstation/data:/app/data
