@@ -53,13 +53,13 @@ services:
         container_name: epgstation
         build:
             context: "./epgstation"
-            dockerfile: "debian.Dockerfile"
+            dockerfile: "Dockerfile"
         volumes:
             - ./epgstation/config:/app/config
             - ./epgstation/data:/app/data
             - ./epgstation/thumbnail:/app/thumbnail
             - ./epgstation/logs:/app/logs
-            - /home/samba/TV:/app/recorded
+            - /samba:/app/recorded
         environment:
             TZ: "Asia/Tokyo"
         depends_on:
