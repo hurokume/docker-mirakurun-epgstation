@@ -23,6 +23,8 @@ services:
             - /dev/px4video3:/dev/px4video3
             - /dev/bus:/dev/bus
         restart: always
+        security_opt:
+          - apparmor=unconfined
         logging:
             driver: json-file
             options:
@@ -44,6 +46,8 @@ services:
         command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --performance-schema=false --expire_logs_days=1 # for mariadb
         # command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_as_ci --performance-schema=false --expire_logs_days=1 --default-authentication-plugin=mysql_native_password # for myql
         restart: always
+        security_opt:
+          - apparmor=unconfined
         logging:
             options:
                 max-size: "10m"
@@ -65,6 +69,8 @@ services:
         depends_on:
             - mirakurun
             - mysql
+        security_opt:
+          - apparmor=unconfined
         ports:
             - "8888:8888"
             - "8889:8889"
