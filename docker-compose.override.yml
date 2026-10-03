@@ -1,4 +1,3 @@
-version: '3.7'
 services:
     mirakurun:
         # Register the reader before the image's normal startup starts pcscd.

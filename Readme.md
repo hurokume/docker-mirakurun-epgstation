@@ -122,6 +122,15 @@ sudo docker-compose exec mirakurun sh -c 'command -v recpt1; cat /app-config/tun
 例えば地デジのコマンドは `recpt1 --device /dev/px4video2 <channel> - -` です。
 `isDisabled: true` の設定は有効化が必要です。
 
+このリポジトリの `mirakurun/conf/tuners.yml` には PX-W3PE4 用の4チューナーを
+有効にした設定を収録し、このファイルを Git 管理対象にしています。
+Mirakurun の設定形式は YAML です。`tuners.xml` は使用しません。
+既存の Compose のマウントにより `/app-config/tuners.yml` として読み込まれます。
+tv 側にファイルを反映したら、録画していない時間帯に `sudo docker-compose restart mirakurun` で読み直します。
+コンテナ内に `recpt1` と `arib-b25-stream-test` が必要です。
+BS/CS アンテナへの給電は初期設定では無効です。チューナーからの給電が必要な場合は、
+BS/CS の2つの `command` に `--lnb 15` を追加してください。
+
 #### NEC CK1506-02 カードリーダー (`0409:018b`)
 
 `docker-compose-sample.yml` には、Mirakurun 起動前に `libccid` の対応リーダー一覧へ
