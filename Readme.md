@@ -146,18 +146,72 @@ recordedFormat: '%YEAR%%MONTH%%DAY%-%HOUR%%MIN%%SEC%_%HALF_WIDTH_TITLE%'
 既存環境ではテンプレートの更新だけでは反映されないため、実際の `config.yml` も変更してください。
 既に録画済みのファイル名は変更されません。
 
+### 録画後の HEVC 自動変換
+
+新しい録画が終了すると `recordingFinishCommand` が EPGStation の API を使って
+HEVC のエンコードを登録します。予約ごとにエンコードを指定する必要はありません。
+元の TS は残し、変換結果も EPGStation の録画一覧に登録されます。
+
+| 種類 | ホストの保存先 | EPGStation 内 | Samba 共有 |
+| --- | --- | --- | --- |
+| TS（`.m2ts`） | `./recorded` | `/app/recorded` | `Shared` |
+| HEVC + AAC（`.mp4`） | `./converted` | `/app/converted` | `Converted` |
+
+例: `Shared/20261003-210000_番組タイトル.m2ts` を残したまま、
+`Converted/20261003-210000_番組タイトル.mp4` を作成します。
+保存先の内部名 `recorded` は維持しているので、既存の TS を移動する必要はありません。
+`converted` は変換用の保存先です。予約の録画先は `recorded` にしてください。
+
+変換には CPU の `libx265` を使い、`veryfast` / CRF 26 / 同時 1 件としています。
+解像度は維持し、インターレースを解除します。HEVC 対応の FFmpeg は既存の
+Debian / Alpine Dockerfile に含まれます。設定は `epgstation/scripts/encode-hevc.js` にあります。
+既存の `H.264` モードも引き続き利用できます。
+
+既存環境は `docker-compose.yml` にサンプルと同じ `converted` と `scripts` のマウントを追加し、
+実際の `epgstation/config/config.yml` にも次の項目を反映してください。
+`recorded` / `encode` は既存のリストに項目を追加し、同じキーを二重に作らないでください。
+
+```yaml
+recorded:
+    - name: recorded
+      path: '%ROOT%/recorded'
+    - name: converted
+      path: '%ROOT%/converted'
+recordingFinishCommand: 'node /app/scripts/auto-encode.js'
+encode:
+    - name: HEVC
+      cmd: '%NODE% %ROOT%/scripts/encode-hevc.js'
+      suffix: .mp4
+      rate: 10.0
+    # 既存の H.264 などはこの後に残す
+```
+
+初回のマウント追加は `sudo docker-compose up -d` で反映されます。
+その後 `config.yml` だけを変更した場合は `sudo docker-compose restart epgstation` で読み直します。
+すでに別の `recordingFinishCommand` がある場合は、既存処理とこのスクリプトを呼ぶラッパーにまとめてください。
+EPGStation の待機中・実行中キューおよび変換済み情報を確認し、同じ録画の HEVC の二重登録を避けます。
+既存の予約・ルールにエンコード指定がある場合は、自動処理との重複を避けるため外し、
+**「エンコード後に元ファイルを削除」を無効**にしてください。
+
+対象は設定反映後に終了した録画です。過去の TS は一括変換しません。
+キュー登録の成否は `epgstation/logs/auto-encode.log`、変換状況は EPGStation のエンコード画面で確認できます。
+API の一時的な起動待ちは再試行しますが、登録エラーや変換失敗はログを確認し、
+EPGStation の画面からモード `HEVC`・保存先 `converted`・元ファイル削除なしで再実行してください。
+TS は変換中も保持されます。変換が完了するまで元の TS を削除しないでください。
+
 ### Samba 共有
 
-`samba` サービスが録画フォルダ `./recorded` を共有名 `Shared` で公開します。
-ゲストアクセスで、読取り・書込み・削除を許可しています。
+`samba` サービスが録画フォルダ `./recorded` を共有名 `Shared`、
+HEVC 変換先 `./converted` を共有名 `Converted` で公開します。
+どちらもゲストアクセスで、読取り・書込み・削除を許可しています。
 
 ```sh
 sudo docker-compose up -d
 sudo docker-compose logs --tail=100 samba
 ```
 
-* Windows: エクスプローラーで `\\tv\Shared` または `\\<tvのIPアドレス>\Shared`
-* macOS / Linux: `smb://tv/Shared` または `smb://<tvのIPアドレス>/Shared`
+* Windows: エクスプローラーで `\\tv\Shared` / `\\tv\Converted`（`tv` は IP アドレスでも可）
+* macOS / Linux: `smb://tv/Shared` / `smb://tv/Converted`
 * ユーザー名・パスワード: 不要（ゲスト）
 * 公開ポート: TCP 445（SMB2 / SMB3）
 
@@ -167,7 +221,7 @@ sudo docker-compose logs --tail=100 samba
 
 設定は `samba/smb.conf` にあります。共有内の操作は `force user = root` とし、
 EPGStation が標準設定で作成する root 所有の録画ファイルも操作できるようにしています。
-共有するホストフォルダは `./recorded` のみで、ホスト側の所有者や権限の一括変更は行いません。
+共有するホストフォルダは `./recorded` と `./converted` です。ホスト側の所有者や権限の一括変更は行いません。
 Samba 経由で動画を削除しても EPGStation の録画管理情報は自動削除されないため、
 通常の録画削除は EPGStation の画面から行ってください。
 
@@ -182,9 +236,13 @@ Dockerfile の変更後は `sudo docker-compose up -d --build samba` で反映�
 
 ### 各種ファイル保存先
 
-* 録画データ
+* 録画 TS データ（Shared）
 
 ```./recorded```
+
+* HEVC 変換データ（Converted）
+
+```./converted```
 
 * サムネイル
 

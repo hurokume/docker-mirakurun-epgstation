@@ -26,6 +26,11 @@ recordedFileExtension: .m2ts
 recorded:
     - name: recorded
       path: '%ROOT%/recorded'
+    - name: converted
+      path: '%ROOT%/converted'
+
+# Queue HEVC after each recording; keep the original TS in recorded.
+recordingFinishCommand: 'node /app/scripts/auto-encode.js'
 
 thumbnail: '%ROOT%/thumbnail'
 thumbnailSize: 480x270
@@ -37,6 +42,10 @@ ffprobe: /usr/local/bin/ffprobe
 encodeProcessNum: 4
 concurrentEncodeNum: 1
 encode:
+    - name: HEVC
+      cmd: '%NODE% %ROOT%/scripts/encode-hevc.js'
+      suffix: .mp4
+      rate: 10.0
     - name: H.264
       cmd: '%NODE% %ROOT%/config/enc.js'
       suffix: .mp4

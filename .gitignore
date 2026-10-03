@@ -4,6 +4,7 @@
 *.log-*
 .DS_Store
 /recorded/*
+/converted/*
 /mirakurun/data/*
 /mirakurun/conf/*
 /epgstation/custom.Dockerfile
