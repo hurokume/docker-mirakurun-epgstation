@@ -44,9 +44,9 @@ sudo docker-compose down
 ## 更新
 
 ```sh
-# mirakurunとdbを更新
-sudo docker-compose pull
-# epgstationとsambaを更新
+# dbを更新
+sudo docker-compose pull mysql
+# mirakurun、epgstation、sambaを更新
 sudo docker-compose build --pull
 # 最新のイメージを元に起動
 sudo docker-compose up -d
@@ -74,6 +74,7 @@ sudo docker-compose up -d
 cd ~/git/docker-mirakurun-epgstation
 sh ./apply_to_current_files.sh
 # 録画・変換していない時間帯に反映
+sudo docker-compose up -d --build mirakurun
 sudo docker-compose up -d --force-recreate epgstation samba
 ```
 
@@ -87,6 +88,36 @@ sudo docker-compose up -d --force-recreate epgstation samba
 * ポート番号: 40772
 
 #### PX-W3PE4 チューナー (`px4_drv`)
+
+`mirakurun/Dockerfile` は Mirakurun 4.1.5 をベースに、`recpt1` と
+`arib-b25-stream-test` をビルド時にインストールします。
+`recpt1` のソースコミットとデコーダーのバージョンは Dockerfile で固定しています。
+ドライバー `px4_drv` はホスト側で使用し、コンテナには受信用コマンドを組み込みます。
+復号は `tuners.yml` の `decoder` に任せるため、`recpt1` 内蔵の B25 機能は使用しません。
+
+既存環境では `docker-compose.yml` の `mirakurun` にある
+`image: chinachu/mirakurun` を次の `build` に置き換えてください。
+`apply_to_current_files.sh` でサンプル全体を適用する方法でも反映できます。
+
+```yaml
+    mirakurun:
+        build:
+            context: "./mirakurun"
+```
+
+起動中のスキャンを停止した状態で、tv 側に変更を配置して実行します。
+この変更は `restart` だけでは反映されないため、初回はイメージをビルドします。
+
+```sh
+sudo docker-compose up -d --build mirakurun
+sudo docker-compose exec mirakurun recpt1 --version
+sudo docker-compose exec mirakurun sh -c 'command -v arib-b25-stream-test'
+sudo docker-compose logs --since=2m --tail=100 mirakurun
+```
+
+`4 of 4 tuners loaded` を確認した後、チャンネルスキャンを再実行します。
+ベースイメージにはデコーダーを起動時に自動導入する処理もありますが、
+この構成では事前にインストール済みなので、通常の起動時にそのダウンロードは不要です。
 
 `docker-compose-sample.yml` は `/dev/px4video0` ～ `/dev/px4video3` をコンテナへ渡します。
 [px4_drv の仕様](https://github.com/nns779/px4_drv#32-デバイスファイルの確認)では、
@@ -115,7 +146,8 @@ sudo docker-compose exec mirakurun sh -c 'ls -l /dev/px4video*'
 sudo docker-compose exec mirakurun sh -c 'command -v recpt1; cat /app-config/tuners.yml'
 ```
 
-`recpt1` のパスが表示されない場合、コンテナ側への導入も必要です。
+`recpt1` のパスが表示されない場合は、実際の Compose が上記の `build` を使用しているか確認し、
+`sudo docker-compose up -d --build mirakurun` を実行してください。
 ホストにインストールしただけではコンテナから使えません。
 `mirakurun/conf/tuners.yml` の `command` に各デバイスを指定し、
 `types` は `0`・`1` に `[BS, CS]`、`2`・`3` に `[GR]` を設定します。

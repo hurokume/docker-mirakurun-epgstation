@@ -1,6 +1,7 @@
 services:
     mirakurun:
-        image: chinachu/mirakurun
+        build:
+            context: "./mirakurun"
         # Register NEC CK1506-02 (0409:018b) before starting pcscd.
         command:
             - /bin/sh

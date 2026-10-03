@@ -54,4 +54,5 @@ file_pairs | while read -r source destination; do
 done
 
 printf '\nConfiguration updated. Apply it when recording/encoding is idle:\n'
-printf '  sudo docker-compose up -d --force-recreate epgstation samba\n'
+printf '  sudo docker compose up -d --build mirakurun\n'
+printf '  sudo docker compose up -d --force-recreate epgstation samba\n'
