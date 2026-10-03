@@ -58,10 +58,48 @@ sudo docker-compose up -d
 
 * ポート番号: 40772
 
+#### PX-W3PE4 チューナー (`px4_drv`)
+
+`docker-compose-sample.yml` は `/dev/px4video0` ～ `/dev/px4video3` をコンテナへ渡します。
+[px4_drv の仕様](https://github.com/nns779/px4_drv#32-デバイスファイルの確認)では、
+`0`・`1` が BS/CS、`2`・`3` が地デジです。デバイスファイルの存在はドライバ側の認識の確認であり、
+受信・カード読取りの成功は別途確認が必要です。
+
+既存の `docker-compose.yml` はサンプルの更新だけでは変わりません。
+PX-W3PE4 のみを使う場合は、`services.mirakurun.devices` を次の内容に置き換えてください。
+
+```yaml
+        devices:
+            - /dev/bus:/dev/bus
+            - /dev/px4video0:/dev/px4video0
+            - /dev/px4video1:/dev/px4video1
+            - /dev/px4video2:/dev/px4video2
+            - /dev/px4video3:/dev/px4video3
+```
+
+ホストに `/dev/dvb` が存在しない場合、元の `/dev/dvb:/dev/dvb` は削除してください。
+override ファイルに `devices` を追加するだけでは、元の `/dev/dvb` の指定が残るためです。
+変更後、録画していない時間帯に反映・確認します。
+
+```sh
+sudo docker-compose up -d
+sudo docker-compose exec mirakurun sh -c 'ls -l /dev/px4video*'
+sudo docker-compose exec mirakurun sh -c 'command -v recpt1; cat /app-config/tuners.yml'
+```
+
+`recpt1` のパスが表示されない場合、コンテナ側への導入も必要です。
+ホストにインストールしただけではコンテナから使えません。
+`mirakurun/conf/tuners.yml` の `command` に各デバイスを指定し、
+`types` は `0`・`1` に `[BS, CS]`、`2`・`3` に `[GR]` を設定します。
+例えば地デジのコマンドは `recpt1 --device /dev/px4video2 <channel> - -` です。
+`isDisabled: true` の設定は有効化が必要です。
+
 #### NEC CK1506-02 カードリーダー (`0409:018b`)
 
-`docker-compose.override.yml` が、Mirakurun 起動前に `libccid` の対応リーダー一覧へ
-NEC CK1506-02 を追加します。既存の `docker-compose.yml` と同じディレクトリで、通常どおり起動してください。
+`docker-compose-sample.yml` には、Mirakurun 起動前に `libccid` の対応リーダー一覧へ
+NEC CK1506-02 を追加する設定が含まれています。以前の `docker-compose.yml` 向けには、
+`docker-compose.override.yml` でも同じ登録処理を適用します。両方読み込んでも処理は重複しません。
+既存の `docker-compose.yml` と同じディレクトリで、通常どおり起動してください。
 
 ```sh
 sudo docker-compose up -d
@@ -80,7 +118,8 @@ ID の登録だけでカードとの通信が保証されるわけではない�
 コンテナの再作成やイメージ更新後にも、起動時に同じ設定が適用されます。
 ホスト側の `pcscd.service` と `pcscd.socket` は停止し、コンテナとの USB 競合を避けてください。
 
-`-f` や `COMPOSE_FILE` を指定する運用では override ファイルも明示してください。
+以前の `docker-compose.yml` を使い、`-f` や `COMPOSE_FILE` を指定する運用では
+override ファイルも明示してください。新しいサンプルから作成した設定には、この指定は不要です。
 
 ```sh
 sudo docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
@@ -88,7 +127,8 @@ sudo docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 スクリプトだけを変更した場合、`up -d` は既存コンテナを再起動しないことがあります。
 その場合は `sudo docker-compose up -d --force-recreate mirakurun` で反映します。
-この追加を無効にする場合は override ファイルを外し、同じコマンドで Mirakurun を再作成します。
+この追加を無効にする場合は override ファイルを外し、`docker-compose.yml` にも登録処理がある場合は
+Mirakurun の `command` と `/opt/ccid/add-reader.js` のマウントを削除して、同じコマンドで再作成します。
 
 ### EPGStation
 

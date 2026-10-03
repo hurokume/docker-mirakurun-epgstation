@@ -2,6 +2,11 @@ version: '3.7'
 services:
     mirakurun:
         image: chinachu/mirakurun
+        # Register NEC CK1506-02 (0409:018b) before starting pcscd.
+        command:
+            - /bin/sh
+            - -c
+            - node /opt/ccid/add-reader.js && exec /app/docker/container-init.sh
         cap_add:
             - SYS_ADMIN
             - SYS_NICE
@@ -11,11 +16,16 @@ services:
         volumes:
             - ./mirakurun/conf:/app-config
             - ./mirakurun/data:/app-data
+            - ./mirakurun/add-ccid-reader.js:/opt/ccid/add-reader.js:ro
         environment:
             TZ: "Asia/Tokyo"
         devices:
             - /dev/bus:/dev/bus
-            - /dev/dvb:/dev/dvb
+            # PX-W3PE4 (px4_drv): 0/1 = BS/CS, 2/3 = terrestrial TV
+            - /dev/px4video0:/dev/px4video0
+            - /dev/px4video1:/dev/px4video1
+            - /dev/px4video2:/dev/px4video2
+            - /dev/px4video3:/dev/px4video3
         restart: always
         logging:
             driver: json-file
