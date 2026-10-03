@@ -135,6 +135,17 @@ Mirakurun の `command` と `/opt/ccid/add-reader.js` のマウントを削除�
 * ポート番号: 8888
 * ポート番号: 8889
 
+録画ファイル名は `yyyymmdd-hhmmss_番組タイトル（半角）.m2ts` です。
+`epgstation/config/config.yml` の設定は次のとおりです。
+
+```yaml
+recordedFormat: '%YEAR%%MONTH%%DAY%-%HOUR%%MIN%%SEC%_%HALF_WIDTH_TITLE%'
+```
+
+タイトルは EPGStation 標準の `%HALF_WIDTH_TITLE%` を使用します。
+既存環境ではテンプレートの更新だけでは反映されないため、実際の `config.yml` も変更してください。
+既に録画済みのファイル名は変更されません。
+
 ### 各種ファイル保存先
 
 * 録画データ
