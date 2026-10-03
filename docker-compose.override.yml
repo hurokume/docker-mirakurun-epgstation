@@ -1,0 +1,10 @@
+version: '3.7'
+services:
+    mirakurun:
+        # Register the reader before the image's normal startup starts pcscd.
+        command:
+            - /bin/sh
+            - -c
+            - node /opt/ccid/add-reader.js && exec /app/docker/container-init.sh
+        volumes:
+            - ./mirakurun/add-ccid-reader.js:/opt/ccid/add-reader.js:ro
