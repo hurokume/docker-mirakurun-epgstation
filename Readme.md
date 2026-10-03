@@ -46,7 +46,7 @@ sudo docker-compose down
 ```sh
 # mirakurunとdbを更新
 sudo docker-compose pull
-# epgstationを更新
+# epgstationとsambaを更新
 sudo docker-compose build --pull
 # 最新のイメージを元に起動
 sudo docker-compose up -d
@@ -145,6 +145,40 @@ recordedFormat: '%YEAR%%MONTH%%DAY%-%HOUR%%MIN%%SEC%_%HALF_WIDTH_TITLE%'
 タイトルは EPGStation 標準の `%HALF_WIDTH_TITLE%` を使用します。
 既存環境ではテンプレートの更新だけでは反映されないため、実際の `config.yml` も変更してください。
 既に録画済みのファイル名は変更されません。
+
+### Samba 共有
+
+`samba` サービスが録画フォルダ `./recorded` を共有名 `Shared` で公開します。
+ゲストアクセスで、読取り・書込み・削除を許可しています。
+
+```sh
+sudo docker-compose up -d
+sudo docker-compose logs --tail=100 samba
+```
+
+* Windows: エクスプローラーで `\\tv\Shared` または `\\<tvのIPアドレス>\Shared`
+* macOS / Linux: `smb://tv/Shared` または `smb://<tvのIPアドレス>/Shared`
+* ユーザー名・パスワード: 不要（ゲスト）
+* 公開ポート: TCP 445（SMB2 / SMB3）
+
+名前で接続できない場合は IP アドレスを指定してください。
+同じホストで既存の Samba などが TCP 445 を使用している場合は、ポートの競合を解消してから起動します。
+ホストのファイアウォールを使用している場合は、接続元 LAN からの TCP 445 を許可してください。
+
+設定は `samba/smb.conf` にあります。共有内の操作は `force user = root` とし、
+EPGStation が標準設定で作成する root 所有の録画ファイルも操作できるようにしています。
+共有するホストフォルダは `./recorded` のみで、ホスト側の所有者や権限の一括変更は行いません。
+Samba 経由で動画を削除しても EPGStation の録画管理情報は自動削除されないため、
+通常の録画削除は EPGStation の画面から行ってください。
+
+Windows の設定によってはゲスト接続や署名なしの接続が拒否されます。
+その場合は接続する Windows 側の設定を確認してください
+（[Microsoft のゲストログオンに関する説明](https://learn.microsoft.com/en-us/windows-server/storage/file-server/enable-insecure-guest-logons-smb2-and-smb3)）。
+
+既存環境では `docker-compose-sample.yml` の `samba` サービスと `samba-state` ボリュームを
+実際の `docker-compose.yml` にも反映してください。
+`smb.conf` の変更後は `sudo docker-compose restart samba`、
+Dockerfile の変更後は `sudo docker-compose up -d --build samba` で反映します。
 
 ### 各種ファイル保存先
 

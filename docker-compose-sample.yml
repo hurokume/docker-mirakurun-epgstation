@@ -75,7 +75,25 @@ services:
 #             - /dev/dri:/dev/dri
         restart: always
 
+    samba:
+        build:
+            context: "./samba"
+        ports:
+            - "445:445"
+        volumes:
+            - ./recorded:/shares/Shared
+            - ./samba/smb.conf:/etc/samba/smb.conf:ro
+            - samba-state:/var/lib/samba
+        restart: always
+        logging:
+            driver: json-file
+            options:
+                max-file: "1"
+                max-size: 10m
+
 volumes:
     mysql-db:
+        driver: local
+    samba-state:
         driver: local
 
