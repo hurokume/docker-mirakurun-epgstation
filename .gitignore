@@ -19,4 +19,5 @@
 !/epgstation/config/serviceLogConfig.sample.yml
 /epgstation/data/*.json
 /docker-compose.yml
+/config-backups/
 !.gitkeep

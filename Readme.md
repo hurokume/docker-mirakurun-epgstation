@@ -54,6 +54,34 @@ sudo docker-compose up -d
 
 ## 設定
 
+### テンプレートを既存設定に適用する
+
+`apply_to_current_files.sh` で、現在の設定をリポジトリ内のテンプレート・サンプルに置き換えます。
+ポート、保存先、DB 接続情報などの個別設定もテンプレート値に戻ります。
+変更前のファイルは `config-backups/日時.ランダム文字列/` に、元のディレクトリ構成で保存します。
+バックアップは Git 管理から除外します。
+
+| コピー元 | 更新先 |
+| --- | --- |
+| `docker-compose-sample.yml` | `docker-compose.yml` |
+| `epgstation/config/config.yml.template` | `epgstation/config/config.yml` |
+| `epgstation/config/enc.js.template` | `epgstation/config/enc.js` |
+| `epgstation/config/operatorLogConfig.sample.yml` | `epgstation/config/operatorLogConfig.yml` |
+| `epgstation/config/epgUpdaterLogConfig.sample.yml` | `epgstation/config/epgUpdaterLogConfig.yml` |
+| `epgstation/config/serviceLogConfig.sample.yml` | `epgstation/config/serviceLogConfig.yml` |
+
+```sh
+cd ~/git/docker-mirakurun-epgstation
+sh ./apply_to_current_files.sh
+# 録画・変換していない時間帯に反映
+sudo docker-compose up -d --force-recreate epgstation samba
+```
+
+スクリプトは確認入力なしで上書きします。既存ファイルへの書込み権限が必要です。
+起動時に読み込む `config.yml` や `smb.conf` の変更も確実に反映するため、上記ではコンテナを再作成します。
+すべてのコピー元・更新先を確認し、バックアップが完了してから上書きを開始します。
+更新先がまだない場合は新規作成します。録画・変換ファイルや DB データは更新対象に含みません。
+
 ### Mirakurun
 
 * ポート番号: 40772
